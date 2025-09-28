@@ -2,46 +2,58 @@ import streamlit as st
 import pandas as pd
 import json
 import re
+import datetime
 
-st.title("Extract and Clean plateText from CSV JSON Column")
+st.title("Extract and Clean plateText from CSV JSON Column with Scan Time")
 
 uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
 
+def timestamp_to_datetime(ms_timestamp):
+    try:
+        ts_seconds = int(ms_timestamp) / 1000
+        dt = datetime.datetime.utcfromtimestamp(ts_seconds)
+        return dt.strftime('%Y-%m-%d %H:%M:%S UTC')
+    except Exception:
+        return None
+
 if uploaded_file:
     try:
-        # Read CSV without header (since your data looks headerless)
-        df = pd.read_csv(uploaded_file, header=None, dtype=str)  # read all as strings to avoid issues
+        # Read CSV without header (your data looks headerless)
+        df = pd.read_csv(uploaded_file, header=None, dtype=str)
         st.write("CSV preview:")
         st.write(df.head())
 
-        # The last column contains the JSON string
-        json_col = df.columns[-1]
+        json_col = df.columns[-1]  # JSON data is last column
+        timestamp_col = df.columns[0]  # Timestamp is first column
 
         def extract_and_clean_plate(json_str):
             try:
                 data = json.loads(json_str)
                 plate = data.get("licensePlateResult", {}).get("plateText", "")
-                # Remove spaces and dashes
                 cleaned_plate = re.sub(r'[\s-]', '', plate)
                 return cleaned_plate
-            except Exception as e:
+            except Exception:
                 return None
 
+        # Extract plateText
         df['cleaned_plateText'] = df[json_col].apply(extract_and_clean_plate)
 
-        # Filter out empty or None values
-        plates = df['cleaned_plateText'].dropna()
-        plates = plates[plates != ""]
+        # Convert timestamp to readable date/time
+        df['scan_time'] = df[timestamp_col].apply(timestamp_to_datetime)
 
-        if not plates.empty:
-            st.write("Extracted and cleaned plateText values:")
-            st.write(plates)
+        # Filter rows with valid plateText
+        filtered_df = df.dropna(subset=['cleaned_plateText'])
+        filtered_df = filtered_df[filtered_df['cleaned_plateText'] != ""]
 
-            csv_output = plates.to_csv(index=False, header=["plateText"])
+        if not filtered_df.empty:
+            st.write("Extracted scan times and cleaned plateText values:")
+            st.write(filtered_df[['scan_time', 'cleaned_plateText']])
+
+            csv_output = filtered_df[['scan_time', 'cleaned_plateText']].to_csv(index=False, header=["scan_time", "plateText"])
             st.download_button(
-                label="Download plateText CSV",
+                label="Download scan time + plateText CSV",
                 data=csv_output,
-                file_name='cleaned_plateText.csv',
+                file_name='scanTime_plateText.csv',
                 mime='text/csv'
             )
         else:
