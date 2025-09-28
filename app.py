@@ -34,14 +34,15 @@ def parse_xml(xml_file):
     entries = []
     for elem in root.findall(".//G_C6"):
         c6 = elem.findtext("C6")
-        c9 = elem.findtext("C9")
+        c9_full = elem.findtext("C9")
         c12 = elem.findtext("C12")
-        if c6 and c9 and c12:
+        if c6 and c9_full and c12:
             cleaned_c12 = re.sub(r'[\s-]', '', c12).upper()
+            c9_short = c9_full.split(',')[0].strip()  # Get only the part before the comma
             entries.append({
                 "plateText": cleaned_c12,
                 "C6": c6,
-                "C9": c9
+                "C9": c9_short
             })
     return pd.DataFrame(entries)
 
@@ -140,3 +141,4 @@ if uploaded_csv:
 
     except Exception as e:
         st.error(f"Error processing file: {e}")
+
