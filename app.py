@@ -4,7 +4,7 @@ import json
 import re
 import datetime
 
-st.title("Extract and Clean plateText from CSV JSON Column with Scan Time")
+st.title("Extract and Filter plateText with Scan Time")
 
 uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
 
@@ -18,13 +18,13 @@ def timestamp_to_datetime(ms_timestamp):
 
 if uploaded_file:
     try:
-        # Read CSV without header (your data looks headerless)
+        # Read CSV without header
         df = pd.read_csv(uploaded_file, header=None, dtype=str)
         st.write("CSV preview:")
         st.write(df.head())
 
-        json_col = df.columns[-1]  # JSON data is last column
-        timestamp_col = df.columns[0]  # Timestamp is first column
+        json_col = df.columns[-1]
+        timestamp_col = df.columns[0]
 
         def extract_and_clean_plate(json_str):
             try:
@@ -35,29 +35,37 @@ if uploaded_file:
             except Exception:
                 return None
 
-        # Extract plateText
+        # Extract plateText and scan time
         df['cleaned_plateText'] = df[json_col].apply(extract_and_clean_plate)
-
-        # Convert timestamp to readable date/time
         df['scan_time'] = df[timestamp_col].apply(timestamp_to_datetime)
 
-        # Filter rows with valid plateText
-        filtered_df = df.dropna(subset=['cleaned_plateText'])
+        # Extract just the date (YYYY-MM-DD)
+        df['scan_date'] = df['scan_time'].str.slice(0, 10)
+
+        # Filter out invalid entries
+        filtered_df = df.dropna(subset=['cleaned_plateText', 'scan_time'])
         filtered_df = filtered_df[filtered_df['cleaned_plateText'] != ""]
 
+        # Display date filter dropdown
+        available_dates = sorted(filtered_df['scan_date'].unique(), reverse=True)
+        selected_date = st.selectbox("Select a date to filter entries:", ["All Dates"] + available_dates)
+
+        if selected_date != "All Dates":
+            filtered_df = filtered_df[filtered_df['scan_date'] == selected_date]
+
         if not filtered_df.empty:
-            st.write("Extracted scan times and cleaned plateText values:")
+            st.write(f"Showing entries for: {selected_date}")
             st.write(filtered_df[['scan_time', 'cleaned_plateText']])
 
             csv_output = filtered_df[['scan_time', 'cleaned_plateText']].to_csv(index=False, header=["scan_time", "plateText"])
             st.download_button(
-                label="Download scan time + plateText CSV",
+                label="Download filtered plateText CSV",
                 data=csv_output,
-                file_name='scanTime_plateText.csv',
+                file_name='filtered_plateText.csv',
                 mime='text/csv'
             )
         else:
-            st.error("No valid plateText values found.")
+            st.warning("No entries found for the selected date.")
 
     except Exception as e:
         st.error(f"Error processing file: {e}")
