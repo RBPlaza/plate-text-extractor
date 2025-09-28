@@ -55,7 +55,21 @@ if uploaded_file:
 
         if not filtered_df.empty:
             st.write(f"Showing entries for: {selected_date}")
-            st.write(filtered_df[['scan_time', 'cleaned_plateText']])
+# Let user click and highlight a plate
+st.write("### Plate Entries")
+selected_plate = st.session_state.get("selected_plate", None)
+
+for idx, row in filtered_df.iterrows():
+    plate = row['cleaned_plateText']
+    time = row['scan_time']
+    button_key = f"select_{idx}"
+
+    if st.button(f"{plate} @ {time}", key=button_key):
+        st.session_state.selected_plate = plate
+
+    # Highlight selected
+    if selected_plate == plate:
+        st.markdown(f"✅ **Selected:** `{plate}` (scanned at {time})")
 
             csv_output = filtered_df[['scan_time', 'cleaned_plateText']].to_csv(index=False, header=["scan_time", "plateText"])
             st.download_button(
@@ -69,3 +83,4 @@ if uploaded_file:
 
     except Exception as e:
         st.error(f"Error processing file: {e}")
+
