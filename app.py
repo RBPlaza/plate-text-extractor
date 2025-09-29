@@ -41,8 +41,8 @@ def parse_xml(xml_file):
             c9_short = c9_full.split(',')[0].strip()
             entries.append({
                 "plateText": cleaned_c12,
-                "Room No.": c6,        # Renamed
-                "Last Name": c9_short  # Renamed
+                "Room No.": c6,
+                "Last Name": c9_short
             })
     return pd.DataFrame(entries)
 
@@ -121,7 +121,7 @@ if uploaded_csv:
                         "note": "No XML Loaded"
                     })
 
-            # Convert to DataFrame and reorder columns
+            # Create DataFrame and reorder columns
             result_df = pd.DataFrame(results)
             column_order = ["scan_time", "Room No.", "Last Name", "plateText", "note"]
             for col in column_order:
@@ -129,12 +129,14 @@ if uploaded_csv:
                     result_df[col] = ""
             result_df = result_df[column_order]
 
-# Highlight "Possible Typo" rows
-def highlight_typos(row):
-    return ['background-color: orange' if isinstance(cell, str) and cell.startswith("⚠") else '' for cell in row]
+            # Highlight rows with possible typos
+            def highlight_typos(row):
+                if isinstance(row['note'], str) and row['note'].startswith("⚠"):
+                    return ['background-color: orange'] * len(row)
+                else:
+                    return [''] * len(row)
 
-st.write(result_df.style.apply(highlight_typos, axis=1))
-
+            st.write(result_df.style.apply(highlight_typos, axis=1))
 
             csv_output = result_df.to_csv(index=False)
             st.download_button(
@@ -148,4 +150,3 @@ st.write(result_df.style.apply(highlight_typos, axis=1))
 
     except Exception as e:
         st.error(f"Error processing file: {e}")
-
