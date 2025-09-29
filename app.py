@@ -126,11 +126,8 @@ if uploaded_csv:
                         "note": "No XML Loaded"
                     })
 
-                result_df = pd.DataFrame(results)
-                # Reorder columns: keep scan_time and note where they are, rearrange the middle ones
-                result_df = result_df[["scan_time", "C6", "C9", "plateText", "note"]]
-                st.dataframe(result_df)
-
+            result_df = pd.DataFrame(results)
+            st.dataframe(result_df)
 
             csv_output = result_df.to_csv(index=False)
             st.download_button(
@@ -144,5 +141,6 @@ if uploaded_csv:
 
     except Exception as e:
         st.error(f"Error processing file: {e}")
+
 
 
