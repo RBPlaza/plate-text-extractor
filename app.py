@@ -127,6 +127,10 @@ if uploaded_csv:
                     })
 
             result_df = pd.DataFrame(results)
+
+            # Reorder columns as requested
+            result_df = result_df[['scan_time', 'C6', 'C9', 'plateText', 'note']]
+
             st.dataframe(result_df)
 
             csv_output = result_df.to_csv(index=False)
@@ -141,7 +145,3 @@ if uploaded_csv:
 
     except Exception as e:
         st.error(f"Error processing file: {e}")
-
-
-
-
